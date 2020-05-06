@@ -8,6 +8,11 @@ class RBTree {
 private:
     struct Node;
 public:
+
+    void display() {
+        display_subtree(_root);
+    }
+
     using value_type = T;
 
     using size_type = std::size_t;
@@ -22,15 +27,13 @@ public:
 
     bool contains(const value_type &key);
 
-    void size();
+    size_type size();
 
     bool isEmpty();
 
     void clear();
 
-
 private:
-    // Meta
     enum Color {
         Black,
         Red,
@@ -59,10 +62,27 @@ private:
 
     void balance_from_node(Node *node);
 
+    Node *find_node(Node *root, const value_type &key);
+
     Node *rotate_left(Node *root);
 
     Node *rotate_right(Node *root);
 
+    void erase_node(Node *node);  //FIXME
+
+    void erase_subtree(Node *root);
+
+    void display_subtree(Node *node) {
+        if (!node) {
+            return;
+        }
+        display_subtree(node->right);
+        display_subtree(node->left);
+        std::cout << node->key << " "
+                  << (node->left ? std::to_string(node->left->key) : "null") << " "
+                  << (node->right ? std::to_string(node->right->key) : "null") << " "
+                  << (node->color == Color::Black ? "B" : "R") << "\n";
+    }
 };
 
 template<typename T>
@@ -151,7 +171,7 @@ void RBTree<T>::balance_from_node(RBTree::Node *node) {
 
 
 template<typename T>
-void RBTree<T>::size() {
+typename RBTree<T>::size_type RBTree<T>::size() {
     return _size;
 }
 
@@ -184,15 +204,66 @@ typename RBTree<T>::Node *RBTree<T>::rotate_right(RBTree::Node *root) {
     return left_child;
 }
 
+template<typename T>
+bool RBTree<T>::contains(const value_type &key) {
+    return find_node(_root, key) != nullptr;
+}
+
+template<typename T>
+void RBTree<T>::clear() {
+    erase_subtree(_root);
+}
+
+template<typename T>
+void RBTree<T>::erase_subtree(RBTree::Node *root) {
+    if (root) {
+        erase_node(root->left);
+        erase_node(root->right);
+        erase_node(root);
+    }
+}
+
+template<typename T>
+void RBTree<T>::erase_node(RBTree::Node *node) {
+    //FIXIT
+}
+
+template<typename T>
+void RBTree<T>::erase(const value_type &key) {
+    erase_node(find_node(key));
+}
+
+template<typename T>
+typename RBTree<T>::Node *RBTree<T>::find_node(RBTree::Node *root, const value_type &key) {
+    if (root) {
+        if (root->key < key) {
+            return find_node(root->right, key);
+        }
+        if (root->key > key) {
+            return find_node(root->left, key);
+        }
+    }
+    return root;
+}
+
 
 int main() {
     RBTree<int> tree;
-    tree.insert(0);
-    tree.insert(1);
-    tree.insert(-1);
-    tree.insert(3);
-    tree.insert(-3);
-    tree.insert(2);
-    tree.insert(-2);
+    int q;
+    std::cin >> q;
+    int command, value;
+    for (size_t i = 0; i < q; ++i) {
+        std::cin >> command;
+        std::cin >> value;
+        if (command == 0) {
+            if (!tree.contains(value)) {
+                tree.insert(value);
+            }
+        } else {
+            std::cout << (tree.contains(value) ? "Yes\n" : "No\n");
+        }
+    }
+    tree.display();
+
     return 0;
 }
