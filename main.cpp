@@ -23,7 +23,7 @@ public:
 
     void insert(const value_type &key);
 
-    void erase(const value_type &key);
+    void erase(const value_type &key); // FIXME
 
     bool contains(const value_type &key);
 
@@ -33,7 +33,9 @@ public:
 
     void clear();
 
+
 private:
+    // Meta
     enum Color {
         Black,
         Red,
@@ -68,7 +70,7 @@ private:
 
     Node *rotate_right(Node *root);
 
-    void erase_node(Node *node);  //FIXME
+    void erase_node(Node *node); //FIXME
 
     void erase_subtree(Node *root);
 
@@ -90,6 +92,7 @@ void RBTree<T>::insert(const value_type &key) {
     Node *node = new Node(key);
     node->color = Color::Red;
     insert_node(_root, node);
+    ++_size;
 }
 
 template<typename T>
@@ -263,6 +266,7 @@ int main() {
             std::cout << (tree.contains(value) ? "Yes\n" : "No\n");
         }
     }
+    std::cout << tree.size() << "\n";
     tree.display();
 
     return 0;
