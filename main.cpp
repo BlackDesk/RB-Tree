@@ -9,10 +9,6 @@ private:
     struct Node;
 public:
 
-    void display() {
-        display_subtree(_root);
-    }
-
     using value_type = T;
 
     using size_type = std::size_t;
@@ -23,15 +19,17 @@ public:
 
     void insert(const value_type &key);
 
-    void erase(const value_type &key); // FIXME
-
-    bool contains(const value_type &key);
-
-    size_type size();
-
-    bool isEmpty();
+    void erase(const value_type &key);  // FIXME
 
     void clear();
+
+    bool contains(const value_type &key) const;
+
+    [[nodiscard]] size_type size() const;
+
+    [[nodiscard]] bool isEmpty() const;
+
+    void display() const;
 
 
 private:
@@ -64,27 +62,19 @@ private:
 
     void balance_from_node(Node *node);
 
-    Node *find_node(Node *root, const value_type &key);
+    Node *find_node(Node *root, const value_type &key) const;
 
-    Node *rotate_left(Node *root);
+    Node *rotate_left(Node *node);
 
-    Node *rotate_right(Node *root);
+    Node *rotate_right(Node *node);
 
     void erase_node(Node *node); //FIXME
 
     void erase_subtree(Node *root);
 
-    void display_subtree(Node *node) {
-        if (!node) {
-            return;
-        }
-        display_subtree(node->right);
-        display_subtree(node->left);
-        std::cout << node->key << " "
-                  << (node->left ? std::to_string(node->left->key) : "null") << " "
-                  << (node->right ? std::to_string(node->right->key) : "null") << " "
-                  << (node->color == Color::Black ? "B" : "R") << "\n";
-    }
+    void display_subtree(Node *node) const;
+
+    void display_node(Node *node) const;
 };
 
 template<typename T>
@@ -140,14 +130,14 @@ void RBTree<T>::balance_from_node(RBTree::Node *node) {
 
     Node *parent = node->parent;
     Node *grandad = node->parent->parent;
-    Node *uncle = (grandad->right == node->parent ? grandad->right : grandad->left);
+    Node *uncle = (grandad->right == node->parent ? grandad->left : grandad->right);
 
-    if (uncle && uncle->color == Color::Red) {               // Uncle is also red
-        uncle->color = Color::Black;                // Change uncle to black
-        parent->color = Color::Black;         // Change dad to black
-        grandad->color = Color::Red;   // Change grandad to red
-        balance_from_node(grandad);    // Balance from grandad
-    } else {                                        // Uncle is black
+    if (uncle && uncle->color == Color::Red) {
+        uncle->color = Color::Black;
+        parent->color = Color::Black;
+        grandad->color = Color::Red;
+        balance_from_node(grandad);
+    } else {
         if (grandad->left == parent && parent->right == node) {
             rotate_left(parent);
             rotate_right(grandad);
@@ -174,41 +164,66 @@ void RBTree<T>::balance_from_node(RBTree::Node *node) {
 
 
 template<typename T>
-typename RBTree<T>::size_type RBTree<T>::size() {
+typename RBTree<T>::size_type RBTree<T>::size() const {
     return _size;
 }
 
 template<typename T>
-bool RBTree<T>::isEmpty() {
+bool RBTree<T>::isEmpty() const {
     return _size == 0;
 }
 
 template<typename T>
-typename RBTree<T>::Node *RBTree<T>::rotate_left(RBTree::Node *root) {
-    Node *right_child = root->right;
-    root->right = right_child->left;
-    if (root->right) {
-        root->right->parent = root;
+typename RBTree<T>::Node *RBTree<T>::rotate_left(RBTree::Node *node) {
+    Node *right_child = node->right;
+    Node *node_parent = node->parent;
+
+    node->right = right_child->left;
+    if (right_child->left) {
+        right_child->left->parent = node;
     }
-    right_child->left = root;
-    root->parent = right_child;
+
+    right_child->left = node;
+    node->parent = right_child;
+
+    right_child->parent = node_parent;
+    if (node_parent) {
+        node_parent->left = right_child;
+    }
+
+    while (_root->parent) {
+        _root = _root->parent;
+    }
+
     return right_child;
 }
 
 template<typename T>
-typename RBTree<T>::Node *RBTree<T>::rotate_right(RBTree::Node *root) {
-    Node *left_child = root->left;
-    root->left = left_child->right;
-    if (root->left) {
-        root->left->parent = root;
+typename RBTree<T>::Node *RBTree<T>::rotate_right(RBTree::Node *node) {
+    Node *left_child = node->left;
+    Node *node_parent = node->parent;
+
+    node->left = left_child->right;
+    if (left_child->right) {
+        left_child->right->parent = node;
     }
-    left_child->right = root;
-    root->parent = left_child;
+
+    left_child->right = node;
+    node->parent = left_child;
+
+    left_child->parent = node_parent;
+    if (node_parent) {
+        node_parent->right = left_child;
+    }
+
+    while (_root->parent) {
+        _root = _root->parent;
+    }
     return left_child;
 }
 
 template<typename T>
-bool RBTree<T>::contains(const value_type &key) {
+bool RBTree<T>::contains(const value_type &key) const {
     return find_node(_root, key) != nullptr;
 }
 
@@ -228,7 +243,7 @@ void RBTree<T>::erase_subtree(RBTree::Node *root) {
 
 template<typename T>
 void RBTree<T>::erase_node(RBTree::Node *node) {
-    //FIXIT
+    //FIXME
 }
 
 template<typename T>
@@ -237,7 +252,12 @@ void RBTree<T>::erase(const value_type &key) {
 }
 
 template<typename T>
-typename RBTree<T>::Node *RBTree<T>::find_node(RBTree::Node *root, const value_type &key) {
+void RBTree<T>::display() const {
+    display_subtree(_root);
+}
+
+template<typename T>
+typename RBTree<T>::Node *RBTree<T>::find_node(RBTree::Node *root, const value_type &key) const {
     if (root) {
         if (root->key < key) {
             return find_node(root->right, key);
@@ -247,6 +267,24 @@ typename RBTree<T>::Node *RBTree<T>::find_node(RBTree::Node *root, const value_t
         }
     }
     return root;
+}
+
+template<typename T>
+void RBTree<T>::display_subtree(RBTree::Node *node) const {
+    if (!node) {
+        return;
+    }
+    display_subtree(node->right);
+    display_subtree(node->left);
+    display_node(node);
+}
+
+template<typename T>
+void RBTree<T>::display_node(Node *node) const {
+    std::cout << node->key << " "
+              << (node->left ? std::to_string(node->left->key) : "null") << " "
+              << (node->right ? std::to_string(node->right->key) : "null") << " "
+              << (node->color == Color::Black ? "B" : "R") << "\n";
 }
 
 
