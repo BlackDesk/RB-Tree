@@ -10,7 +10,6 @@ private:
 public:
 
     using value_type = T;
-
     using size_type = std::size_t;
 
     RBTree() = default;
@@ -20,14 +19,13 @@ public:
     void insert(const value_type &key);
 
     void erase(const value_type &key);  // FIXME
-
     void clear();
 
-    bool contains(const value_type &key) const;
+    [[nodiscard]] bool contains(const value_type &key) const;
 
     [[nodiscard]] size_type size() const;
 
-    [[nodiscard]] bool isEmpty() const;
+    [[nodiscard]] bool empty() const;
 
     void display() const;
 
@@ -47,6 +45,14 @@ private:
         Node *right{nullptr};
         Node *parent{nullptr};
 
+        bool isRight() {
+            return this->parent && this->parent->right == this;
+        }
+
+        bool isLeft() {
+            return this->parent && this->parent->left == this;
+        }
+
         explicit Node(const value_type &key,
                       const Color &color = Color::Red) : key(key), color(color) {};
     };
@@ -58,15 +64,15 @@ private:
     // Methods
     void insert_node(Node *root, Node *node);
 
-    void insert_straight(Node *subtree_root, Node *node);
+    void insert_straight(Node *subtree_root, Node *node); // Inserts without balancing
 
     void balance_from_node(Node *node);
 
     Node *find_node(Node *root, const value_type &key) const;
 
-    Node *rotate_left(Node *node);
+    Node *l_rotation(Node *node);
 
-    Node *rotate_right(Node *node);
+    Node *r_rotation(Node *node);
 
     void erase_node(Node *node); //FIXME
 
@@ -79,6 +85,7 @@ private:
 
 template<typename T>
 void RBTree<T>::insert(const value_type &key) {
+    if (contains(key)) { return; }
     Node *node = new Node(key);
     node->color = Color::Red;
     insert_node(_root, node);
@@ -130,7 +137,7 @@ void RBTree<T>::balance_from_node(RBTree::Node *node) {
 
     Node *parent = node->parent;
     Node *grandad = node->parent->parent;
-    Node *uncle = (grandad->right == node->parent ? grandad->left : grandad->right);
+    Node *uncle = (node->isRight() ? grandad->left : grandad->right);
 
     if (uncle && uncle->color == Color::Red) {
         uncle->color = Color::Black;
@@ -138,22 +145,22 @@ void RBTree<T>::balance_from_node(RBTree::Node *node) {
         grandad->color = Color::Red;
         balance_from_node(grandad);
     } else {
-        if (grandad->left == parent && parent->right == node) {
-            rotate_left(parent);
-            rotate_right(grandad);
+        if (parent->isLeft() && node->isRight()) {
+            l_rotation(parent);
+            r_rotation(grandad);
             node->color = Color::Black;
             grandad->color = Color::Red;
-        } else if (grandad->right == parent && parent->left == node) {
-            rotate_right(parent);
-            rotate_left(grandad);
+        } else if (parent->isRight() && node->isLeft()) {
+            r_rotation(parent);
+            l_rotation(grandad);
             node->color = Color::Black;
             grandad->color = Color::Red;
-        } else if (grandad->right == parent && parent->right == node) {
-            rotate_left(grandad);
+        } else if (parent->isRight() && node->isRight()) {
+            l_rotation(grandad);
             grandad->color = Color::Red;
             parent->color = Color::Black;
-        } else if (grandad->left == parent && parent->left == node) {
-            rotate_right(grandad);
+        } else if (parent->isLeft() && node->isLeft()) {
+            r_rotation(grandad);
             grandad->color = Color::Red;
             parent->color = Color::Black;
         } else {
@@ -169,20 +176,19 @@ typename RBTree<T>::size_type RBTree<T>::size() const {
 }
 
 template<typename T>
-bool RBTree<T>::isEmpty() const {
+bool RBTree<T>::empty() const {
     return _size == 0;
 }
 
 template<typename T>
-typename RBTree<T>::Node *RBTree<T>::rotate_left(RBTree::Node *node) {
+typename RBTree<T>::Node *RBTree<T>::l_rotation(RBTree::Node *node) {
     Node *right_child = node->right;
     Node *node_parent = node->parent;
 
     node->right = right_child->left;
-    if (right_child->left) {
-        right_child->left->parent = node;
+    if (node->right) {
+        node->right->parent = node;
     }
-
     right_child->left = node;
     node->parent = right_child;
 
@@ -199,15 +205,14 @@ typename RBTree<T>::Node *RBTree<T>::rotate_left(RBTree::Node *node) {
 }
 
 template<typename T>
-typename RBTree<T>::Node *RBTree<T>::rotate_right(RBTree::Node *node) {
+typename RBTree<T>::Node *RBTree<T>::r_rotation(RBTree::Node *node) {
     Node *left_child = node->left;
     Node *node_parent = node->parent;
 
     node->left = left_child->right;
-    if (left_child->right) {
-        left_child->right->parent = node;
+    if (node->left) {
+        node->left->parent = node;
     }
-
     left_child->right = node;
     node->parent = left_child;
 
@@ -288,24 +293,32 @@ void RBTree<T>::display_node(Node *node) const {
 }
 
 
+void run_sample(RBTree<int> &tree, const std::vector<int> &data) {
+    for (const auto &elem : data) {
+        tree.insert(elem);
+        std::cout << "-----" << elem << " inserted" << "-----\n";
+        tree.display();
+        std::cout << "\n";
+    }
+}
+
+
 int main() {
     RBTree<int> tree;
-    int q;
-    std::cin >> q;
-    int command, value;
-    for (size_t i = 0; i < q; ++i) {
-        std::cin >> command;
-        std::cin >> value;
-        if (command == 0) {
-            if (!tree.contains(value)) {
-                tree.insert(value);
-            }
-        } else {
-            std::cout << (tree.contains(value) ? "Yes\n" : "No\n");
-        }
-    }
-    std::cout << tree.size() << "\n";
-    tree.display();
-
+    run_sample(tree, {1, 2, 3, 4, 5});
+//    int q;
+//    std::cin >> q;
+//    int command, value;
+//    for (size_t i = 0; i < q; ++i) {
+//        std::cin >> command;
+//        std::cin >> value;
+//        if (command == 0) {
+//                tree.insert(value);
+//        } else {
+//            std::cout << (tree.contains(value) ? "Yes\n" : "No\n");
+//        }
+//    }
+//    std::cout << tree.size() << "\n";
+//    tree.display();
     return 0;
 }
